@@ -1,0 +1,1191 @@
+import React, { useState, useEffect } from 'react';
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('home');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userType, setUserType] = useState(''); // 'consultant' or 'entrepreneur'
+  const [consultants, setConsultants] = useState([
+    {
+      id: 1,
+      name: "Sarah Johnson",
+      expertise: "Digital Transformation",
+      experience: "8 years",
+      rating: 4.9,
+      image: "https://placehold.co/300x300/F59E0B/FFFFFF?text=SJ",
+      bio: "Expert in helping businesses transition to digital platforms with proven strategies.",
+      paymentMethods: ["dana", "bca", "mandiri"],
+      businessTypes: ["Technology", "E-commerce"]
+    },
+    {
+      id: 2,
+      name: "Michael Chen",
+      expertise: "Technology Solutions",
+      experience: "12 years",
+      rating: 4.8,
+      image: "https://placehold.co/300x300/10B981/FFFFFF?text=MC",
+      bio: "Specializes in custom software development and cloud infrastructure solutions.",
+      paymentMethods: ["ovo", "bni", "bri"],
+      businessTypes: ["Technology", "Manufacturing"]
+    },
+    {
+      id: 3,
+      name: "Emily Rodriguez",
+      expertise: "Marketing Strategy",
+      experience: "6 years",
+      rating: 4.7,
+      image: "https://placehold.co/300x300/8B5CF6/FFFFFF?text=ER",
+      bio: "Helps brands grow through innovative marketing campaigns and customer engagement.",
+      paymentMethods: ["shopeepay", "btn", "danamon"],
+      businessTypes: ["Retail", "E-commerce", "Food & Beverage"]
+    }
+  ]);
+  
+  const [entrepreneurs, setEntrepreneurs] = useState([]);
+  const [selectedConsultant, setSelectedConsultant] = useState(null);
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [consultationFee, setConsultationFee] = useState(250000);
+
+  // Registration forms
+  const [consultantForm, setConsultantForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    expertise: '',
+    experience: '',
+    bio: '',
+    linkedin: '',
+    profileImage: '',
+    paymentMethods: [],
+    hourlyRate: ''
+  });
+
+  const [entrepreneurForm, setEntrepreneurForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    businessName: '',
+    businessType: '',
+    businessDescription: '',
+    goals: '',
+    profileImage: ''
+  });
+
+  const paymentOptions = [
+    { id: 'dana', name: 'DANA', icon: '📱' },
+    { id: 'ovo', name: 'OVO', icon: '🔵' },
+    { id: 'shopeepay', name: 'ShopeePay', icon: '🛒' },
+    { id: 'bca', name: 'BCA', icon: '💳' },
+    { id: 'bni', name: 'BNI', icon: '💳' },
+    { id: 'bri', name: 'BRI', icon: '💳' },
+    { id: 'btn', name: 'BTN', icon: '💳' },
+    { id: 'danamon', name: 'Danamon', icon: '💳' },
+    { id: 'mandiri', name: 'Mandiri', icon: '💳' }
+  ];
+
+  const businessTypes = [
+    "Technology", "E-commerce", "Retail", "Food & Beverage", 
+    "Manufacturing", "Healthcare", "Education", "Finance", 
+    "Real Estate", "Transportation", "Entertainment", "Other"
+  ];
+
+  // Handle file upload for profile images
+  const handleImageUpload = (e, formType) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (formType === 'consultant') {
+          setConsultantForm({
+            ...consultantForm,
+            profileImage: reader.result
+          });
+        } else {
+          setEntrepreneurForm({
+            ...entrepreneurForm,
+            profileImage: reader.result
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Toggle payment methods
+  const handlePaymentMethodToggle = (methodId) => {
+    setConsultantForm(prev => {
+      const currentMethods = prev.paymentMethods || [];
+      if (currentMethods.includes(methodId)) {
+        return {
+          ...prev,
+          paymentMethods: currentMethods.filter(id => id !== methodId)
+        };
+      } else {
+        return {
+          ...prev,
+          paymentMethods: [...currentMethods, methodId]
+        };
+      }
+    });
+  };
+
+  // Handle consultant registration
+  const handleConsultantSubmit = (e) => {
+    e.preventDefault();
+    if (consultantForm.paymentMethods.length === 0) {
+      alert('Please select at least one payment method');
+      return;
+    }
+    const newConsultant = {
+      id: consultants.length + 1,
+      ...consultantForm,
+      rating: 0,
+      image: consultantForm.profileImage || `https://placehold.co/300x300/3B82F6/FFFFFF?text=${consultantForm.name.split(' ').map(n => n[0]).join('')}`,
+      businessTypes: [] // Will be updated based on expertise
+    };
+    setConsultants([...consultants, newConsultant]);
+    alert('Registration successful! Your application is under review.');
+    
+    // Reset form
+    setConsultantForm({
+      name: '',
+      email: '',
+      phone: '',
+      expertise: '',
+      experience: '',
+      bio: '',
+      linkedin: '',
+      profileImage: '',
+      paymentMethods: [],
+      hourlyRate: ''
+    });
+    setActiveTab('consultants');
+  };
+
+  // Handle entrepreneur registration
+  const handleEntrepreneurSubmit = (e) => {
+    e.preventDefault();
+    const newEntrepreneur = {
+      id: entrepreneurs.length + 1,
+      ...entrepreneurForm,
+      image: entrepreneurForm.profileImage || `https://placehold.co/300x300/10B981/FFFFFF?text=${entrepreneurForm.name.split(' ').map(n => n[0]).join('')}`,
+      registrationDate: new Date().toLocaleDateString()
+    };
+    setEntrepreneurs([...entrepreneurs, newEntrepreneur]);
+    alert('Registration successful! Welcome to GuidePro.');
+    
+    // Reset form
+    setEntrepreneurForm({
+      name: '',
+      email: '',
+      phone: '',
+      businessName: '',
+      businessType: '',
+      businessDescription: '',
+      goals: '',
+      profileImage: ''
+    });
+    setActiveTab('consultants');
+  };
+
+  // Start chat with consultant
+  const startChat = (consultant) => {
+    setSelectedConsultant(consultant);
+    setShowChat(true);
+    setChatMessages([
+      { sender: 'system', text: `Hello! You're now connected with ${consultant.name}, ${consultant.expertise}. Please discuss your needs and agree on consultation details.` },
+      { sender: 'consultant', text: `Hello! I'm ${consultant.name}. How can I help you with your ${entrepreneurForm.businessType || 'business'} today?` }
+    ]);
+  };
+
+  // Send chat message
+  const sendMessage = (text) => {
+    if (text.trim()) {
+      setChatMessages([...chatMessages, { sender: 'user', text }]);
+    }
+  };
+
+  // Complete consultation and process payment
+  const completeConsultation = () => {
+    if (!paymentMethod) {
+      alert('Please select a payment method');
+      return;
+    }
+    setShowPaymentModal(false);
+    alert(`Payment of Rp ${consultationFee.toLocaleString('id-ID')} via ${getPaymentName(paymentMethod)} has been processed. Thank you for using GuidePro!`);
+    setShowChat(false);
+  };
+
+  // Export data to CSV (simulated)
+  const exportToCSV = (data, filename) => {
+    // This is a simulation - in a real app, this would generate an actual CSV file
+    alert(`Data export simulated for ${filename}. In a real application, this would download a CSV file with all registration data.`);
+    
+    // Show sample of what would be exported
+    console.log(`Exporting ${data.length} records to ${filename}:`, data);
+  };
+
+  // Helper functions
+  const getPaymentIcon = (methodId) => {
+    const method = paymentOptions.find(m => m.id === methodId);
+    return method ? method.icon : '💳';
+  };
+
+  const getPaymentName = (methodId) => {
+    const method = paymentOptions.find(m => m.id === methodId);
+    return method ? method.name : methodId;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 flex items-center">
+                <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg mr-3"></div>
+                <span className="text-xl font-bold text-gray-900">GuidePro</span>
+              </div>
+            </div>
+            <div className="hidden md:flex items-center space-x-6">
+              <button 
+                onClick={() => setActiveTab('home')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${activeTab === 'home' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:text-blue-600'}`}
+              >
+                Home
+              </button>
+              <button 
+                onClick={() => setActiveTab('consultants')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${activeTab === 'consultants' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:text-blue-600'}`}
+              >
+                Find Guides
+              </button>
+              <button 
+                onClick={() => setActiveTab('blog')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${activeTab === 'blog' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:text-blue-600'}`}
+              >
+                Blog
+              </button>
+              <div className="relative group">
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium text-sm">
+                  Register
+                </button>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                  <button 
+                    onClick={() => {setActiveTab('register'); setUserType('consultant');}}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    As Guide
+                  </button>
+                  <button 
+                    onClick={() => {setActiveTab('register'); setUserType('entrepreneur');}}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    As Entrepreneur
+                  </button>
+                </div>
+              </div>
+              {(consultants.length > 0 || entrepreneurs.length > 0) && (
+                <button 
+                  onClick={() => exportToCSV([...consultants, ...entrepreneurs], 'guidepro_data.csv')}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-300 font-medium text-sm"
+                >
+                  Export Data
+                </button>
+              )}
+            </div>
+            <div className="md:hidden flex items-center">
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="text-gray-700 hover:text-blue-600"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-white border-t">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              <button 
+                onClick={() => {setActiveTab('home'); setIsMenuOpen(false);}}
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 w-full text-left"
+              >
+                Home
+              </button>
+              <button 
+                onClick={() => {setActiveTab('consultants'); setIsMenuOpen(false);}}
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 w-full text-left"
+              >
+                Find Guides
+              </button>
+              <button 
+                onClick={() => {setActiveTab('blog'); setIsMenuOpen(false);}}
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 w-full text-left"
+              >
+                Blog
+              </button>
+              <div className="border-t border-gray-200 my-2"></div>
+              <button 
+                onClick={() => {setActiveTab('register'); setUserType('consultant'); setIsMenuOpen(false);}}
+                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600"
+              >
+                Register as Guide
+              </button>
+              <button 
+                onClick={() => {setActiveTab('register'); setUserType('entrepreneur'); setIsMenuOpen(false);}}
+                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600"
+              >
+                Register as Entrepreneur
+              </button>
+              {(consultants.length > 0 || entrepreneurs.length > 0) && (
+                <button 
+                  onClick={() => {exportToCSV([...consultants, ...entrepreneurs], 'guidepro_data.csv'); setIsMenuOpen(false);}}
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-green-600 text-white hover:bg-green-700"
+                >
+                  Export Data
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Hero Section */}
+      {activeTab === 'home' && (
+        <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                  Grow Your Business with Expert <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Guides</span>
+                </h1>
+                <p className="mt-6 text-xl text-gray-600 max-w-lg">
+                  Connect with professional guides for your business needs without the high costs of hiring full-time experts.
+                </p>
+                <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                  <button 
+                    onClick={() => setActiveTab('consultants')}
+                    className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium text-lg"
+                  >
+                    Find Guides
+                  </button>
+                  <button 
+                    onClick={() => {setActiveTab('register'); setUserType('entrepreneur');}}
+                    className="border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg hover:bg-blue-600 hover:text-white transition-colors duration-300 font-medium text-lg"
+                  >
+                    Register as Entrepreneur
+                  </button>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-xl opacity-20"></div>
+                <img 
+                  src="https://placehold.co/600x400/3B82F6/FFFFFF?text=Business+Growth" 
+                  alt="Business Growth" 
+                  className="relative rounded-2xl shadow-2xl"
+                />
+              </div>
+            </div>
+            
+            {/* Key Benefits */}
+            <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+                <div className="text-4xl mb-4">💰</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Affordable Pricing</h3>
+                <p className="text-gray-600">Pay only for the time you need, without expensive long-term contracts or high salaries.</p>
+              </div>
+              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+                <div className="text-4xl mb-4">⏱️</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Flexible Scheduling</h3>
+                <p className="text-gray-600">Book consultations at times that work for you, including evenings and weekends.</p>
+              </div>
+              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+                <div className="text-4xl mb-4">🎯</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Targeted Expertise</h3>
+                <p className="text-gray-600">Find guides with specific expertise that matches your exact business needs.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Consultants Section */}
+      {activeTab === 'consultants' && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Expert Guides</h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Browse through our network of verified professionals ready to guide you to success.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {consultants.map((consultant) => (
+                <div key={consultant.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                  <img 
+                    src={consultant.image} 
+                    alt={consultant.name}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-xl font-bold text-gray-900">{consultant.name}</h3>
+                      <div className="flex items-center bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm font-medium">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        {consultant.rating}
+                      </div>
+                    </div>
+                    <p className="text-blue-600 font-medium mb-2">{consultant.expertise}</p>
+                    <p className="text-gray-600 text-sm mb-4">{consultant.experience} experience</p>
+                    <p className="text-gray-700 mb-4 line-clamp-3">{consultant.bio}</p>
+                    
+                    <div className="mb-4">
+                      <h4 className="font-semibold text-gray-800 mb-2">Specializes in:</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {consultant.businessTypes.length > 0 ? (
+                          consultant.businessTypes.map((type, index) => (
+                            <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs">
+                              {type}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs">
+                            All Business Types
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => startChat(consultant)}
+                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium"
+                    >
+                      Chat with Guide
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Blog Section */}
+      {activeTab === 'blog' && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why GuidePro?</h2>
+              <p className="text-xl text-gray-600">
+                Discover how GuidePro is revolutionizing the way businesses access professional expertise
+              </p>
+            </div>
+            
+            <article className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+              <img 
+                src="https://placehold.co/800x400/3B82F6/FFFFFF?text=GuidePro+Advantages" 
+                alt="GuidePro Advantages" 
+                className="w-full h-64 object-cover rounded-lg mb-6"
+              />
+              
+              <div className="prose prose-lg max-w-none">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">The GuidePro Advantage: Affordable, Flexible Business Guidance</h3>
+                
+                <p className="text-lg text-gray-700 mb-6">
+                  In today's fast-paced business environment, entrepreneurs and small business owners face countless challenges that require specialized expertise. Traditionally, accessing this expertise meant hiring full-time professionals with high salaries and benefits, or engaging expensive consulting firms with minimum retainers that put professional guidance out of reach for many businesses.
+                </p>
+                
+                <h4 className="text-xl font-bold text-gray-900 mb-3">Our Mission</h4>
+                <p className="text-gray-700 mb-6">
+                  GuidePro was founded to solve this problem. We believe that every business, regardless of size or budget, deserves access to professional guidance from experienced experts. Our platform connects entrepreneurs with vetted professionals who can provide targeted advice and support without the commitment or cost of full-time employment.
+                </p>
+                
+                <div className="bg-blue-50 p-6 rounded-lg mb-6">
+                  <h4 className="text-xl font-bold text-blue-900 mb-3">Benefits for Entrepreneurs</h4>
+                  <ul className="text-gray-700 space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-blue-600 mr-2">✓</span>
+                      <span><strong>Affordable pricing</strong> - Pay only for the time you need, with no long-term commitments</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-600 mr-2">✓</span>
+                      <span><strong>Flexible scheduling</strong> - Book consultations at times that work for your busy schedule</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-600 mr-2">✓</span>
+                      <span><strong>Targeted expertise</strong> - Find guides with specific experience in your industry or challenge</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-600 mr-2">✓</span>
+                      <span><strong>No hiring overhead</strong> - Avoid the costs and complexities of recruiting, onboarding, and benefits</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="bg-purple-50 p-6 rounded-lg mb-6">
+                  <h4 className="text-xl font-bold text-purple-900 mb-3">Benefits for Professional Guides</h4>
+                  <ul className="text-gray-700 space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-purple-600 mr-2">✓</span>
+                      <span><strong>Additional income</strong> - Monetize your expertise without leaving your current position</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-purple-600 mr-2">✓</span>
+                      <span><strong>Flexible hours</strong> - Work when it's convenient for you, including evenings and weekends</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-purple-600 mr-2">✓</span>
+                      <span><strong>Professional recognition</strong> - Gain appreciation for your years of professional experience</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-purple-600 mr-2">✓</span>
+                      <span><strong>Portfolio building</strong> - Expand your professional network and build your reputation</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <h4 className="text-xl font-bold text-gray-900 mb-3">How It Works</h4>
+                <p className="text-gray-700 mb-4">
+                  The GuidePro process is simple and designed to protect both entrepreneurs and guides:
+                </p>
+                <ol className="text-gray-700 space-y-3 mb-6">
+                  <li><strong>1. Registration</strong> - Entrepreneurs and guides create profiles highlighting their needs or expertise</li>
+                  <li><strong>2. Matching</strong> - Entrepreneurs browse guides or are matched based on their specific requirements</li>
+                  <li><strong>3. Consultation</strong> - Schedule and conduct consultations via chat, video call, or in-person meetings</li>
+                  <li><strong>4. Payment</strong> - Fees are held in escrow and released to the guide only after the consultation is completed</li>
+                  <li><strong>5. Review</strong> - Both parties rate each other to maintain quality and accountability on the platform</li>
+                </ol>
+                
+                <p className="text-gray-700">
+                  Whether you're an entrepreneur looking for guidance to grow your business, or a professional seeking to share your expertise and earn additional income, GuidePro provides the platform to make these connections happen affordably, flexibly, and effectively.
+                </p>
+                
+                <div className="mt-8 text-center">
+                  <button 
+                    onClick={() => {setActiveTab('register'); setUserType('entrepreneur');}}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium mr-4"
+                  >
+                    Register as Entrepreneur
+                  </button>
+                  <button 
+                    onClick={() => {setActiveTab('register'); setUserType('consultant');}}
+                    className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors duration-300 font-medium"
+                  >
+                    Register as Guide
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      )}
+
+      {/* Registration Section */}
+      {activeTab === 'register' && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                {userType === 'consultant' ? 'Register as a Guide' : 'Register as an Entrepreneur'}
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                {userType === 'consultant' 
+                  ? 'Join GuidePro and share your expertise with businesses worldwide.' 
+                  : 'Get the professional guidance you need to grow your business.'}
+              </p>
+              <div className="flex justify-center mt-6 space-x-4">
+                <button 
+                  onClick={() => setUserType('consultant')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    userType === 'consultant' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  As Guide
+                </button>
+                <button 
+                  onClick={() => setUserType('entrepreneur')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    userType === 'entrepreneur' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  As Entrepreneur
+                </button>
+              </div>
+            </div>
+            
+            {userType === 'consultant' && (
+              <div className="bg-white rounded-2xl shadow-xl p-8">
+                <form onSubmit={handleConsultantSubmit} className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">Guide Registration</h3>
+                    <p className="text-gray-600">Share your professional expertise and earn additional income</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                      <input 
+                        type="text" 
+                        id="name" 
+                        name="name"
+                        value={consultantForm.name}
+                        onChange={handleRegistrationChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="John Doe" 
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                      <input 
+                        type="email" 
+                        id="email" 
+                        name="email"
+                        value={consultantForm.email}
+                        onChange={handleRegistrationChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="john@example.com" 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                      <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone"
+                        value={consultantForm.phone}
+                        onChange={handleRegistrationChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="+1 (555) 123-4567" 
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
+                      <input 
+                        type="text" 
+                        id="experience" 
+                        name="experience"
+                        value={consultantForm.experience}
+                        onChange={handleRegistrationChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="e.g., 5 years" 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="expertise" className="block text-sm font-medium text-gray-700 mb-2">Area of Expertise</label>
+                      <input 
+                        type="text" 
+                        id="expertise" 
+                        name="expertise"
+                        value={consultantForm.expertise}
+                        onChange={handleRegistrationChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="e.g., Digital Marketing, Financial Consulting" 
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700 mb-2">Hourly Rate (Rp)</label>
+                      <input 
+                        type="number" 
+                        id="hourlyRate" 
+                        name="hourlyRate"
+                        value={consultantForm.hourlyRate}
+                        onChange={handleRegistrationChange}
+                        required
+                        min="50000"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="250000" 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="linkedin" className="block text-sm font-medium text-gray-700 mb-2">LinkedIn Profile (Optional)</label>
+                    <input 
+                      type="url" 
+                      id="linkedin" 
+                      name="linkedin"
+                      value={consultantForm.linkedin}
+                      onChange={handleRegistrationChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                      placeholder="https://linkedin.com/in/yourprofile" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                      <input 
+                        type="file" 
+                        id="profileImage" 
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'consultant')}
+                        className="hidden"
+                      />
+                      <label 
+                        htmlFor="profileImage" 
+                        className="cursor-pointer block"
+                      >
+                        {consultantForm.profileImage ? (
+                          <img 
+                            src={consultantForm.profileImage} 
+                            alt="Profile preview" 
+                            className="mx-auto h-32 w-32 rounded-full object-cover mb-2"
+                          />
+                        ) : (
+                          <div className="mx-auto h-32 w-32 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                            <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="text-blue-600 hover:text-blue-800 font-medium">
+                          {consultantForm.profileImage ? 'Change Photo' : 'Upload Profile Photo'}
+                        </span>
+                      </label>
+                      <p className="text-sm text-gray-500 mt-2">Upload a professional photo of yourself (JPG, PNG)</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Methods</label>
+                    <p className="text-sm text-gray-500 mb-3">Select all payment methods you accept from clients:</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {paymentOptions.map((method) => (
+                        <div 
+                          key={method.id}
+                          onClick={() => handlePaymentMethodToggle(method.id)}
+                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                            consultantForm.paymentMethods.includes(method.id)
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-300 hover:border-blue-400'
+                          }`}
+                        >
+                          <div className="flex items-center justify-center">
+                            <span className="text-xl mr-2">{method.icon}</span>
+                            <span className="text-sm font-medium">{method.name}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {consultantForm.paymentMethods.length === 0 && (
+                      <p className="text-red-500 text-sm mt-2">Please select at least one payment method</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-2">Professional Bio</label>
+                    <textarea 
+                      id="bio" 
+                      name="bio"
+                      value={consultantForm.bio}
+                      onChange={handleRegistrationChange}
+                      required
+                      rows="4" 
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                      placeholder="Tell us about your professional background, skills, and what makes you unique as a guide..." 
+                    ></textarea>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="font-bold text-blue-900 mb-2">What happens after registration?</h3>
+                    <ul className="text-blue-800 space-y-1 text-sm">
+                      <li>• Your application will be reviewed within 2-3 business days</li>
+                      <li>• You'll receive an email notification about your approval status</li>
+                      <li>• Once approved, your profile will be visible to potential clients</li>
+                      <li>• You can start receiving consultation requests immediately</li>
+                      <li>• Payment will be released to you after each completed consultation</li>
+                    </ul>
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium text-lg"
+                    disabled={consultantForm.paymentMethods.length === 0}
+                  >
+                    Submit Registration
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {userType === 'entrepreneur' && (
+              <div className="bg-white rounded-2xl shadow-xl p-8">
+                <form onSubmit={handleEntrepreneurSubmit} className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">Entrepreneur Registration</h3>
+                    <p className="text-gray-600">Get the professional guidance you need to grow your business</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                      <input 
+                        type="text" 
+                        id="name" 
+                        name="name"
+                        value={entrepreneurForm.name}
+                        onChange={(e) => setEntrepreneurForm({...entrepreneurForm, name: e.target.value})}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="John Doe" 
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                      <input 
+                        type="email" 
+                        id="email" 
+                        name="email"
+                        value={entrepreneurForm.email}
+                        onChange={(e) => setEntrepreneurForm({...entrepreneurForm, email: e.target.value})}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="john@example.com" 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                      <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone"
+                        value={entrepreneurForm.phone}
+                        onChange={(e) => setEntrepreneurForm({...entrepreneurForm, phone: e.target.value})}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                        placeholder="+1 (555) 123-4567" 
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="businessType" className="block text-sm font-medium text-gray-700 mb-2">Business Type</label>
+                      <select 
+                        id="businessType" 
+                        name="businessType"
+                        value={entrepreneurForm.businessType}
+                        onChange={(e) => setEntrepreneurForm({...entrepreneurForm, businessType: e.target.value})}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                      >
+                        <option value="">Select your business type</option>
+                        {businessTypes.map((type, index) => (
+                          <option key={index} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                    <input 
+                      type="text" 
+                      id="businessName" 
+                      name="businessName"
+                      value={entrepreneurForm.businessName}
+                      onChange={(e) => setEntrepreneurForm({...entrepreneurForm, businessName: e.target.value})}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                      placeholder="My Business Name" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="businessDescription" className="block text-sm font-medium text-gray-700 mb-2">Business Description</label>
+                    <textarea 
+                      id="businessDescription" 
+                      name="businessDescription"
+                      value={entrepreneurForm.businessDescription}
+                      onChange={(e) => setEntrepreneurForm({...entrepreneurForm, businessDescription: e.target.value})}
+                      required
+                      rows="3" 
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                      placeholder="Briefly describe your business, products, or services" 
+                    ></textarea>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="goals" className="block text-sm font-medium text-gray-700 mb-2">What are your current business goals or challenges?</label>
+                    <textarea 
+                      id="goals" 
+                      name="goals"
+                      value={entrepreneurForm.goals}
+                      onChange={(e) => setEntrepreneurForm({...entrepreneurForm, goals: e.target.value})}
+                      required
+                      rows="4" 
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent" 
+                      placeholder="What specific help are you looking for? (e.g., marketing strategy, financial planning, operations improvement)" 
+                    ></textarea>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-2">Profile Photo (Optional)</label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                      <input 
+                        type="file" 
+                        id="profileImage" 
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'entrepreneur')}
+                        className="hidden"
+                      />
+                      <label 
+                        htmlFor="profileImage" 
+                        className="cursor-pointer block"
+                      >
+                        {entrepreneurForm.profileImage ? (
+                          <img 
+                            src={entrepreneurForm.profileImage} 
+                            alt="Profile preview" 
+                            className="mx-auto h-32 w-32 rounded-full object-cover mb-2"
+                          />
+                        ) : (
+                          <div className="mx-auto h-32 w-32 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                            <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="text-blue-600 hover:text-blue-800 font-medium">
+                          {entrepreneurForm.profileImage ? 'Change Photo' : 'Upload Profile Photo'}
+                        </span>
+                      </label>
+                      <p className="text-sm text-gray-500 mt-2">Upload a photo (JPG, PNG)</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="font-bold text-blue-900 mb-2">How GuidePro works for entrepreneurs:</h3>
+                    <ul className="text-blue-800 space-y-1 text-sm">
+                      <li>• Browse our network of professional guides in your industry</li>
+                      <li>• Schedule consultations at times that work for your schedule</li>
+                      <li>• Payment is held securely and only released after your consultation</li>
+                      <li>• Rate your guide to help maintain quality on our platform</li>
+                      <li>• Build ongoing relationships with guides who understand your business</li>
+                    </ul>
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium text-lg"
+                  >
+                    Register Now
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Chat Modal */}
+      {showChat && selectedConsultant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-hidden">
+            <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
+              <div className="flex items-center">
+                <img src={selectedConsultant.image} alt={selectedConsultant.name} className="w-10 h-10 rounded-full mr-3" />
+                <div>
+                  <h3 className="font-bold">{selectedConsultant.name}</h3>
+                  <p className="text-sm opacity-90">{selectedConsultant.expertise}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowChat(false)}
+                className="text-white hover:text-gray-200 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              {chatMessages.map((message, index) => (
+                <div 
+                  key={index} 
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    message.sender === 'user' 
+                      ? 'bg-blue-600 text-white' 
+                      : message.sender === 'consultant' 
+                        ? 'bg-gray-200 text-gray-800' 
+                        : 'bg-yellow-100 text-yellow-800 text-sm italic'
+                  }`}>
+                    {message.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="p-4 border-t">
+              <div className="flex space-x-2">
+                <input 
+                  type="text" 
+                  placeholder="Type your message..." 
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      sendMessage(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <button 
+                  onClick={() => setShowPaymentModal(true)}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Complete & Pay
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Consultation fee: Rp {consultationFee.toLocaleString('id-ID')} (negotiable with guide)
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Complete Consultation & Payment</h3>
+            <p className="text-gray-600 mb-4">Please select your payment method to complete this consultation:</p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
+              <div className="grid grid-cols-2 gap-3">
+                {selectedConsultant?.paymentMethods?.map((method) => (
+                  <div 
+                    key={method}
+                    onClick={() => setPaymentMethod(method)}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      paymentMethod === method
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-300 hover:border-blue-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center">
+                      <span className="text-xl mr-2">{getPaymentIcon(method)}</span>
+                      <span className="text-sm font-medium">{getPaymentName(method)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <div className="flex justify-between">
+                <span className="font-medium">Consultation Fee:</span>
+                <span className="font-bold">Rp {consultationFee.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between mt-2">
+                <span className="font-medium">Guide:</span>
+                <span>{selectedConsultant?.name}</span>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button 
+                onClick={() => setShowPaymentModal(false)}
+                className="flex-1 bg-gray-300 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={completeConsultation}
+                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                disabled={!paymentMethod}
+              >
+                Complete & Pay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center mb-4">
+                <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg mr-3"></div>
+                <span className="text-xl font-bold">GuidePro</span>
+              </div>
+              <p className="text-gray-400 mb-6 max-w-md">
+                Connecting entrepreneurs with expert guides worldwide. Get professional business guidance without the high costs of hiring full-time experts.
+              </p>
+              <div className="flex space-x-4">
+                <a href="#" className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                  </svg>
+                </a>
+                <a href="#" className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                </a>
+                <a href="#" className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold mb-4">For Entrepreneurs</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">Find Guides</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">How It Works</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Payment Methods</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Success Stories</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold mb-4">For Guides</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">Register</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Requirements</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Payment Setup</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
+            <p>&copy; 2024 GuidePro. All rights reserved.</p>
+            <p className="mt-2 text-sm">Accepting payments via DANA, OVO, ShopeePay, BCA, BNI, BRI, BTN, Danamon, Mandiri</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
